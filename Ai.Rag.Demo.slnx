@@ -9,5 +9,6 @@
   </Folder>
   <Folder Name="/_SolutionItems/">
     <File Path="docker-compose.yml" />
+    <File Path="README.md" />
   </Folder>
 </Solution>
