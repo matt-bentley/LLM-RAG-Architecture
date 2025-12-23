@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir \
 # Download the model once at build time (optional but speeds up first run)  
 # Comment this out if you prefer download at container runtime  
 RUN python -c "from transformers import AutoTokenizer, AutoModelForSequenceClassification; \  
-    model_id = 'cross-encoder/ms-marco-MiniLM-L6-v2'; \
+    model_id = 'BAAI/bge-reranker-base'; \
     AutoModelForSequenceClassification.from_pretrained(model_id); \  
     AutoTokenizer.from_pretrained(model_id)"  
 

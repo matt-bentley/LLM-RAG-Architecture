@@ -1,9 +1,8 @@
 using Ai.Rag.Demo.Models;
-using Ai.Rag.Demo.Services;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Graphics.Colors;
 
-namespace Ai.Rag.Demo.ExtractionStrategies;
+namespace Ai.Rag.Demo.DocumentExtraction.ExtractionStrategies;
 
 /// <summary>
 /// Extraction strategy for processing PDFs by detecting sections based on font characteristics

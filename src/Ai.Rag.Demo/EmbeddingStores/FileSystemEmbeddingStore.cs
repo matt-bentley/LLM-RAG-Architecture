@@ -1,7 +1,6 @@
 using System.Numerics.Tensors;
 using System.Text.Json;
 using Ai.Rag.Demo.Models;
-using Ai.Rag.Demo.Services;
 
 namespace Ai.Rag.Demo.EmbeddingStores;
 
@@ -10,13 +9,12 @@ namespace Ai.Rag.Demo.EmbeddingStores;
 /// </summary>
 public class FileSystemEmbeddingStore : IEmbeddingStore
 {
-    private readonly string _storageDirectory;
+    private const string _storageDirectory = "./embeddings";
     private readonly string _indexFilePath;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public FileSystemEmbeddingStore(string storageDirectory)
+    public FileSystemEmbeddingStore()
     {
-        _storageDirectory = storageDirectory;
         _indexFilePath = Path.Combine(_storageDirectory, "index.json");
         _jsonOptions = new JsonSerializerOptions
         {

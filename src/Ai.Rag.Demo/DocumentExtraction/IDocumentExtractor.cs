@@ -1,6 +1,6 @@
 using Ai.Rag.Demo.Models;
 
-namespace Ai.Rag.Demo.Services;
+namespace Ai.Rag.Demo.DocumentExtraction;
 
 /// <summary>
 /// Interface for document processing services that extract text and create chunks

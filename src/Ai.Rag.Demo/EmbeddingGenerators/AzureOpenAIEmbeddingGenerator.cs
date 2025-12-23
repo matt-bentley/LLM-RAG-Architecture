@@ -1,8 +1,9 @@
 using Ai.Rag.Demo.Models;
 using Azure;
 using Azure.AI.OpenAI;
+using Microsoft.Extensions.Options;
 
-namespace Ai.Rag.Demo.Services;
+namespace Ai.Rag.Demo.EmbeddingGenerators;
 
 /// <summary>
 /// Azure OpenAI implementation of embedding generation
@@ -12,10 +13,10 @@ public class AzureOpenAIEmbeddingGenerator : IEmbeddingGenerator
     private readonly AzureOpenAIClient _client;
     private readonly string _deploymentName;
 
-    public AzureOpenAIEmbeddingGenerator(string endpoint, string apiKey, string deploymentName)
+    public AzureOpenAIEmbeddingGenerator(IOptions<EmbeddingSettings> options)
     {
-        _client = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
-        _deploymentName = deploymentName;
+        _client = new AzureOpenAIClient(new Uri(options.Value.Endpoint), new AzureKeyCredential(options.Value.ApiKey));
+        _deploymentName = options.Value.DeploymentName;
     }
 
     public async Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default)
@@ -29,7 +30,7 @@ public class AzureOpenAIEmbeddingGenerator : IEmbeddingGenerator
     public async Task<IReadOnlyList<float[]>> GenerateEmbeddingsAsync(List<DocumentChunk> chunks, CancellationToken cancellationToken = default)
     {
         var embeddingClient = _client.GetEmbeddingClient(_deploymentName);
-        var allEmbeddings = new List<float[]>();
+        var allEmbeddings = new List<float[]>(chunks.Count);
         const int batchSize = 50;
 
         for (int i = 0; i < chunks.Count; i += batchSize)

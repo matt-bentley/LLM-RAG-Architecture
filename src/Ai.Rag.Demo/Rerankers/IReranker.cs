@@ -1,6 +1,6 @@
 using Ai.Rag.Demo.Models;
 
-namespace Ai.Rag.Demo.Services;
+namespace Ai.Rag.Demo.Rerankers;
 
 /// <summary>
 /// Interface for re-ranking search results using an LLM

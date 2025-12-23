@@ -1,5 +1,6 @@
 using Ai.Rag.Demo.Models;
 using Ai.Rag.Demo.Services;
+using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
 
@@ -16,7 +17,7 @@ namespace Ai.Rag.Demo.EmbeddingStores;
 /// - Pros: No local state to maintain, no DF file to sync, always consistent
 /// - Cons: Less accurate BM25 (Qdrant computes IDF from sparse index occupancy, not true document frequency)
 /// </remarks>
-public class QdrantHybridEmbeddingStoreWithQdrantIdf : IEmbeddingStore
+public class QdrantHybridIdfEmbeddingStore : IEmbeddingStore
 {
     private readonly QdrantClient _client;
     private readonly string _collectionName;
@@ -26,58 +27,22 @@ public class QdrantHybridEmbeddingStoreWithQdrantIdf : IEmbeddingStore
     private readonly TextTokenizer _tokenizer;
 
     // BM25 TF parameters (IDF is handled by Qdrant)
-    private readonly double _k1;
-    private readonly double _b;
+    private const double _k1 = 1.2;
+    private const double _b = 0.75;
     private readonly double _avgDocLength;
 
     private const string DenseVectorName = "dense";
     private const string SparseVectorName = "sparse";
 
-    public QdrantHybridEmbeddingStoreWithQdrantIdf(
-        string host = "localhost",
-        int port = 6334,
-        string collectionName = "documents_hybrid_qdrant_idf",
-        int vectorSize = 1536,
-        double k1 = 1.2,
-        double b = 0.75,
-        double avgDocLength = 256,
-        float denseWeight = 0.7f,
-        float sparseWeight = 0.3f,
-        TextTokenizer tokenizer = null)
+    public QdrantHybridIdfEmbeddingStore(IOptions<EmbeddingSettings> options)
     {
-        _client = new QdrantClient(host, port);
-        _collectionName = collectionName;
-        _denseVectorSize = vectorSize;
-        _k1 = k1;
-        _b = b;
-        _avgDocLength = avgDocLength;
-        _denseWeight = denseWeight;
-        _sparseWeight = sparseWeight;
-        _tokenizer = tokenizer ?? new TextTokenizer();
-
-        InitializeCollectionAsync().GetAwaiter().GetResult();
-    }
-
-    public QdrantHybridEmbeddingStoreWithQdrantIdf(
-        QdrantClient client,
-        string collectionName = "documents_hybrid_qdrant_idf",
-        int vectorSize = 1536,
-        double k1 = 1.2,
-        double b = 0.75,
-        double avgDocLength = 256,
-        float denseWeight = 0.7f,
-        float sparseWeight = 0.3f,
-        TextTokenizer tokenizer = null)
-    {
-        _client = client;
-        _collectionName = collectionName;
-        _denseVectorSize = vectorSize;
-        _k1 = k1;
-        _b = b;
-        _avgDocLength = avgDocLength;
-        _denseWeight = denseWeight;
-        _sparseWeight = sparseWeight;
-        _tokenizer = tokenizer ?? new TextTokenizer();
+        _client = new QdrantClient("localhost", 6334);
+        _collectionName = "documents_hybrid_qdrant_idf";
+        _avgDocLength = options.Value.MaxChunkTokens;
+        _denseVectorSize = options.Value.VectorSize;
+        _denseWeight = options.Value.DenseVectorWeight;
+        _sparseWeight = 1 - options.Value.DenseVectorWeight;
+        _tokenizer = new TextTokenizer();
 
         InitializeCollectionAsync().GetAwaiter().GetResult();
     }

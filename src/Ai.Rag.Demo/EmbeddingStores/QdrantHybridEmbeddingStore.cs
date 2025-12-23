@@ -1,8 +1,8 @@
 using Ai.Rag.Demo.Models;
 using Ai.Rag.Demo.Services;
+using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
-using System.Text.Json;
 
 namespace Ai.Rag.Demo.EmbeddingStores;
 
@@ -17,30 +17,23 @@ public class QdrantHybridEmbeddingStore : IEmbeddingStore
     private readonly Bm25SparseVectorizer _bm25Vectorizer;
     private readonly float _denseWeight;
     private readonly float _sparseWeight;
+    private const double _k1 = 1.2;
+    private const double _b = 0.75;
 
     private const string DenseVectorName = "dense";
     private const string SparseVectorName = "sparse";
 
-    public QdrantHybridEmbeddingStore(
-        string host = "localhost",
-        int port = 6334,
-        string collectionName = "documents_hybrid",
-        int vectorSize = 1536,
-        double k1 = 1.2,
-        double b = 0.75,
-        float denseWeight = 0.7f,
-        float sparseWeight = 0.3f,
-        string dfStoragePath = null)
+    public QdrantHybridEmbeddingStore(IOptions<EmbeddingSettings> options)
     {
-        _client = new QdrantClient(host, port);
-        _collectionName = collectionName;
-        _denseVectorSize = vectorSize;
-        _denseWeight = denseWeight;
-        _sparseWeight = sparseWeight;
+        _client = new QdrantClient("localhost", 6334);
+        _collectionName = "documents_hybrid";
+        _denseVectorSize = options.Value.VectorSize;
+        _denseWeight = options.Value.DenseVectorWeight;
+        _sparseWeight = 1 - options.Value.DenseVectorWeight;
         _bm25Vectorizer = new Bm25SparseVectorizer(
-            storagePath: dfStoragePath ?? $"./{collectionName}_df.json",
-            k1: k1,
-            b: b);
+            storagePath: $"./{_collectionName}_df.json",
+            k1: _k1,
+            b: _b);
 
         InitializeCollectionAsync().GetAwaiter().GetResult();
     }

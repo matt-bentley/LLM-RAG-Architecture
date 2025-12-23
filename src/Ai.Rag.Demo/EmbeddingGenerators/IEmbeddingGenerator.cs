@@ -1,6 +1,6 @@
 using Ai.Rag.Demo.Models;
 
-namespace Ai.Rag.Demo.Services;
+namespace Ai.Rag.Demo.EmbeddingGenerators;
 
 /// <summary>
 /// Interface for generating text embeddings

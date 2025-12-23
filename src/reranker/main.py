@@ -7,8 +7,7 @@ from contextlib import asynccontextmanager
 # Global model and tokenizer
 model = None
 tokenizer = None
-model_id = "cross-encoder/ms-marco-MiniLM-L6-v2"
-
+model_id = "BAAI/bge-reranker-base"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,7 +30,6 @@ async def lifespan(app: FastAPI):
     # Cleanup (if needed)
     print("Shutting down...")
 
-
 app = FastAPI(
     title="Reranker API",
     description="Cross-encoder reranking service for RAG applications",
@@ -39,21 +37,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-
 class RerankRequest(BaseModel):
     query: str
     documents: list[str]
 
-
 class RerankResponse(BaseModel):
     scores: list[float]
-
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "model": model_id}
-
 
 @app.post("/rerank", response_model=RerankResponse)
 async def rerank(request: RerankRequest):

@@ -1,7 +1,7 @@
 using System.Text;
 using UglyToad.PdfPig.Content;
 
-namespace Ai.Rag.Demo.ExtractionStrategies;
+namespace Ai.Rag.Demo.DocumentExtraction.ExtractionStrategies;
 
 /// <summary>
 /// Shared utilities for PDF text extraction with line break detection.

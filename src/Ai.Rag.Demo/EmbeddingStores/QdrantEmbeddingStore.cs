@@ -1,5 +1,5 @@
 using Ai.Rag.Demo.Models;
-using Ai.Rag.Demo.Services;
+using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
 
@@ -14,11 +14,11 @@ public class QdrantEmbeddingStore : IEmbeddingStore
     private readonly string _collectionName;
     private readonly int _vectorSize;
 
-    public QdrantEmbeddingStore(string host = "localhost", int port = 6334, string collectionName = "documents", int vectorSize = 1536)
+    public QdrantEmbeddingStore(IOptions<EmbeddingSettings> options)
     {
-        _client = new QdrantClient(host, port);
-        _collectionName = collectionName;
-        _vectorSize = vectorSize;
+        _client = new QdrantClient("localhost", 6334);
+        _collectionName = "documents";
+        _vectorSize = options.Value.VectorSize;
 
         InitializeCollectionAsync().GetAwaiter().GetResult();
     }

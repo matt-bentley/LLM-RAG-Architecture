@@ -1,6 +1,9 @@
+using Ai.Rag.Demo.DocumentExtraction;
+using Ai.Rag.Demo.DocumentExtraction.ExtractionStrategies;
+using Ai.Rag.Demo.EmbeddingGenerators;
 using Ai.Rag.Demo.EmbeddingStores;
-using Ai.Rag.Demo.ExtractionStrategies;
 using Ai.Rag.Demo.Models;
+using Ai.Rag.Demo.Rerankers;
 
 namespace Ai.Rag.Demo.Services;
 
@@ -13,30 +16,18 @@ public class RagService
     private readonly IEmbeddingGenerator _embeddingGenerator;
     private readonly IReranker _rerankerService;
     private readonly IDocumentExtractor _documentExtractor;
-    private readonly FileSystemEmbeddingStore _fileSystemEmbeddingStore;
-    private readonly QdrantEmbeddingStore _qdrantEmbeddingStore;
-    private readonly QdrantHybridEmbeddingStore _hybridEmbeddingStore;
-    private readonly QdrantHybridEmbeddingStoreWithQdrantIdf _hybridIdfEmbeddingStore;
     private readonly int _adjacentChunkCount;
 
     public RagService(
         IEmbeddingStore embeddingStore,
         IEmbeddingGenerator embeddingGenerator,
         IReranker rerankerService,
-        FileSystemEmbeddingStore fileSystemEmbeddingStore,
-        QdrantEmbeddingStore qdrantEmbeddingStore,
-        QdrantHybridEmbeddingStore hybridEmbeddingStore,
-        QdrantHybridEmbeddingStoreWithQdrantIdf hybridIdfEmbeddingStore,
         IDocumentExtractor documentExtractor,
         int adjacentChunkCount = 1)
     {
         _embeddingStore = embeddingStore;
         _embeddingGenerator = embeddingGenerator;
         _rerankerService = rerankerService;
-        _fileSystemEmbeddingStore = fileSystemEmbeddingStore;
-        _qdrantEmbeddingStore = qdrantEmbeddingStore;
-        _hybridEmbeddingStore = hybridEmbeddingStore;
-        _hybridIdfEmbeddingStore = hybridIdfEmbeddingStore;
         _documentExtractor = documentExtractor;
         _adjacentChunkCount = adjacentChunkCount;
     }
@@ -101,23 +92,8 @@ public class RagService
         var results = await _embeddingStore.SearchWithAdjacentChunksAsync(
             query, queryEmbedding, retrievalCount, _adjacentChunkCount, cancellationToken);
 
-        //var fileResults = await _fileSystemEmbeddingStore.SearchWithAdjacentChunksAsync(
-        //    query, queryEmbedding, retrievalCount, _adjacentChunkCount, cancellationToken);
-        //var qResults = await _qdrantEmbeddingStore.SearchWithAdjacentChunksAsync(
-        //    query, queryEmbedding, retrievalCount, _adjacentChunkCount, cancellationToken);
-        //var hResults = await _hybridEmbeddingStore.SearchWithAdjacentChunksAsync(
-        //    query, queryEmbedding, retrievalCount, _adjacentChunkCount, cancellationToken);
-        //var hIdfResults = await _hybridIdfEmbeddingStore.SearchWithAdjacentChunksAsync(
-        //    query, queryEmbedding, retrievalCount, _adjacentChunkCount, cancellationToken);
-
         // Rerank results and limit to topK
         var rerankedResults = await _rerankerService.RerankAsync(query, results, topK, cancellationToken);
-        //var client = new HttpClient()
-        //{
-        //    BaseAddress = new Uri("http://localhost:8000/")
-        //};
-        //var crossEncoderReranker = new CrossEncoderReranker(client);
-        //var rerankedResults2 = await crossEncoderReranker.RerankAsync(query, results, topK, cancellationToken);
 
         return rerankedResults.Select(r => r.Chunk).ToList();
     }

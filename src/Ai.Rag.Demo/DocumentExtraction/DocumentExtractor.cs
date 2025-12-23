@@ -2,7 +2,7 @@ using Ai.Rag.Demo.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.ML.Tokenizers;
 
-namespace Ai.Rag.Demo.Services;
+namespace Ai.Rag.Demo.DocumentExtraction;
 
 /// <summary>
 /// Service for processing documents by using PDF bookmarks (outlines) to identify sections

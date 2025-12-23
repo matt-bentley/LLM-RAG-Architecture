@@ -1,9 +1,8 @@
 ﻿using Ai.Rag.Demo.Models;
-using Ai.Rag.Demo.Services;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Outline;
 
-namespace Ai.Rag.Demo.ExtractionStrategies
+namespace Ai.Rag.Demo.DocumentExtraction.ExtractionStrategies
 {
     public sealed class PdfBookmarkExtractor : IExtractionStrategy
     {

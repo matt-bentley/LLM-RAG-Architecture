@@ -1,6 +1,9 @@
+using Ai.Rag.Demo.DocumentExtraction;
+using Ai.Rag.Demo.EmbeddingGenerators;
 using Ai.Rag.Demo.EmbeddingStores;
 using Ai.Rag.Demo.Models;
 using Ai.Rag.Demo.Plugins;
+using Ai.Rag.Demo.Rerankers;
 using Ai.Rag.Demo.Services;
 using Ai.Rag.Demo.Settings;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,37 +22,29 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddRagServices(this IServiceCollection services)
     {
-        // Register embedding store
-
         services.AddSingleton<IEmbeddingStore>(sp =>
-            new QdrantHybridEmbeddingStoreWithQdrantIdf(vectorSize: 3072));
-
-        //services.AddSingleton<IEmbeddingStore>(sp =>
-        //    new QdrantEmbeddingStore("localhost", 6334, "documents", 3072));
-
-        services.AddSingleton(sp =>
-            new QdrantEmbeddingStore("localhost", 6334, "documents", 3072));
-
-        services.AddSingleton(sp =>
-            new FileSystemEmbeddingStore("./embeddings"));
-
-        services.AddSingleton(sp =>
-            new QdrantHybridEmbeddingStore(vectorSize: 3072));
-
-        services.AddSingleton(sp =>
-            new QdrantHybridEmbeddingStoreWithQdrantIdf(vectorSize: 3072));
-
-        //services.AddSingleton<IEmbeddingStore>(sp => 
-        //    new FileSystemEmbeddingStore("./embeddings"));
+        {
+            var config = sp.GetRequiredService<IOptions<EmbeddingSettings>>();
+            return config.Value.StoreType switch
+            {
+                EmbeddingStoreType.QdrantHybrid => new QdrantHybridEmbeddingStore(config),
+                EmbeddingStoreType.QdrantHybridIdf => new QdrantHybridIdfEmbeddingStore(config),
+                EmbeddingStoreType.Qdrant => new QdrantEmbeddingStore(config),
+                EmbeddingStoreType.FileSystem => new FileSystemEmbeddingStore(),
+                _ => throw new NotSupportedException($"Embedding store type '{config.Value.StoreType}' is not supported.")
+            };
+        });
 
         // Register embedding generator
         services.AddSingleton<IEmbeddingGenerator>(sp =>
         {
             var config = sp.GetRequiredService<IOptions<EmbeddingSettings>>();
-            return new AzureOpenAIEmbeddingGenerator(
-                config.Value.Endpoint,
-                config.Value.ApiKey,
-                config.Value.DeploymentName);
+            return config.Value.Type switch
+            {
+                EmbeddingType.AzureOpenAi => new AzureOpenAIEmbeddingGenerator(config),
+                EmbeddingType.Http => new HttpEmbeddingGenerator(config),
+                _ => throw new NotSupportedException($"Embedding type '{config.Value.Type}' is not supported.")
+            };
         });
 
         var httpHandler = new HttpClientHandler
@@ -68,7 +63,7 @@ public static class ServiceCollectionExtensions
 
                 return config.Value.Type switch
                 {
-                    RerankerType.CrossEncoder => new CrossEncoderReranker(httpClient),
+                    RerankerType.CrossEncoder => new CrossEncoderReranker(httpClient, config),
                     RerankerType.AzureOpenAiLlm => new LlmReranker(
                         Kernel.CreateBuilder()
                             .AddAzureOpenAIChatCompletion(
@@ -76,21 +71,13 @@ public static class ServiceCollectionExtensions
                             endpoint: config.Value.Endpoint,
                             apiKey: config.Value.ApiKey,
                             httpClient: httpClient)
-                        .Build())
+                        .Build()),
+                    _ => throw new NotSupportedException($"Reranker type '{config.Value.Type}' is not supported.")
                 };
             });
 
-        // Register document processor (combines PDF extraction and chunking)
-        //services.AddSingleton<IDocumentExtractor>(sp =>
-        //    new SimpleDocumentExtractor(chunkSize: 3000, chunkOverlap: 450));
-        //services.AddSingleton<IDocumentExtractor>(sp =>
-        //    new SectionBasedDocumentExtractor(maxChunkSize: 3000, chunkOverlap: 450, maxHeadingFontSize: 30));
         services.AddSingleton<IDocumentExtractor, DocumentExtractor>();
-
-        // Register RAG service
         services.AddSingleton<RagService>();
-
-        // Register RAG plugin
         services.AddSingleton<RagPlugin>();
 
         return services;

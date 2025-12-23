@@ -1,8 +1,10 @@
+using Ai.Rag.Demo.Models;
+using Ai.Rag.Demo.Settings;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Ai.Rag.Demo.Models;
 
-namespace Ai.Rag.Demo.Services;
+namespace Ai.Rag.Demo.Rerankers;
 
 /// <summary>
 /// Re-ranks search results using an LLM to evaluate relevance to the query
@@ -10,10 +12,13 @@ namespace Ai.Rag.Demo.Services;
 public class CrossEncoderReranker : IReranker
 {
     private readonly HttpClient _client;
+    private readonly IOptions<RerankerSettings> _options;
 
-    public CrossEncoderReranker(HttpClient client)
+    public CrossEncoderReranker(HttpClient client,
+        IOptions<RerankerSettings> options)
     {
         _client = client;
+        _options = options;
     }
 
     /// <inheritdoc />
@@ -33,7 +38,7 @@ public class CrossEncoderReranker : IReranker
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         };
 
-        var response = await _client.PostAsync("/rerank",
+        var response = await _client.PostAsync($"{_options.Value.Endpoint}rerank",
             JsonContent.Create(new RerankRequest(
                 query,
                 results.Select(r => r.GenerateEmbeddingText())), options: serializerOptions),

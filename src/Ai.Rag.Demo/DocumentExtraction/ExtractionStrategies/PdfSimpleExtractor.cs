@@ -1,8 +1,7 @@
 using Ai.Rag.Demo.Models;
-using Ai.Rag.Demo.Services;
 using UglyToad.PdfPig;
 
-namespace Ai.Rag.Demo.ExtractionStrategies;
+namespace Ai.Rag.Demo.DocumentExtraction.ExtractionStrategies;
 
 /// <summary>
 /// A simple PDF extraction strategy that extracts all content into a single section.

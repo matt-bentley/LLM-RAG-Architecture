@@ -3,7 +3,7 @@ using Ai.Rag.Demo.Models;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace Ai.Rag.Demo.Services;
+namespace Ai.Rag.Demo.Rerankers;
 
 /// <summary>
 /// Re-ranks search results using an LLM to evaluate relevance to the query

@@ -1,6 +1,25 @@
 version: '3.8'
 
 services:
+  
+  reranker:
+    build:
+      context: ./src/reranker
+      dockerfile: Dockerfile
+    image: mabentley/reranker:latest
+    container_name: reranker
+    ports:
+      - "8000:8000"  # REST API
+
+  embedding:
+    build:
+      context: ./src/embedding
+      dockerfile: Dockerfile
+    image: mabentley/embedding:latest
+    container_name: embedding
+    ports:
+      - "8001:8000"  # REST API
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
