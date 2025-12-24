@@ -57,7 +57,7 @@ services:
       - Llm__Endpoint=http://ollama:11434/v1
       - Llm__ApiKey=ollama
       - Llm__ChatDeploymentName=llama3.2:3b
-      - Embedding__Endpoint=http://embedding:8001/
+      - Embedding__Endpoint=http://embedding:8000/
       - Reranker__Endpoint=http://reranker:8000/
       - Qdrant__Host=qdrant
 
