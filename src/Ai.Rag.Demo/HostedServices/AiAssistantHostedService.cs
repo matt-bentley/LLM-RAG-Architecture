@@ -50,12 +50,20 @@ public class AiAssistantHostedService : IHostedService
 
             var chatHistory = new ChatHistory();
 
-            // System prompt
-            chatHistory.AddSystemMessage(
-                "You are a helpful AI assistant with access to a document search system. " +
-                "When users ask questions, use the search_documents function to find relevant information from indexed PDF documents. " +
-                "Always cite the source document and chunk when providing information. " +
-                "If no relevant information is found, say so clearly.");
+            chatHistory.AddSystemMessage("""
+You are an AI assistant that answers questions using indexed documents.
+    
+IMPORTANT: You MUST use the available tools to answer questions. Do not make up information.
+    
+Available tools:
+- search_documents: ALWAYS call this first when the user asks a question. Pass the user's question as the query.
+- index_pdf: Call when user wants to index/add a PDF file.
+- delete_document: Call when user wants to remove a document.
+- clear_index: Call when user wants to clear all documents.
+    
+After receiving search results, summarize the relevant information and cite sources.
+If no results are found, tell the user no relevant documents were found.
+""");
 
             Console.WriteLine("Assistant initialized! You can:");
             Console.WriteLine("1. Index PDFs in the Data directory: Type 'index <pdf-name>' to add documents");
