@@ -37,6 +37,163 @@ Files to index for RAG must be in the `src/Ai.Rag.Demo/Data` folder. The current
                        └─────────────┘         └─────────────┘
 ```
 
+## Interaction Flows
+
+### Application Startup
+
+Initializes the Semantic Kernel with the RAG plugin, configures the LLM connection, and ensures the Qdrant vector collection exists with the required indexes for hybrid search (dense vectors for semantic similarity and sparse vectors for BM25 keyword matching).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant HostedService as AiAssistantHostedService
+    participant SK as Semantic Kernel
+    participant ChatService as IChatCompletionService<br/>(Azure OpenAI / Ollama)
+    participant EmbeddingStore as QdrantHybridIdfEmbeddingStore
+    participant Qdrant as Qdrant Vector DB
+
+    HostedService->>SK: Initialize Kernel with RagPlugin
+    SK->>ChatService: Configure LLM Connection
+    EmbeddingStore->>Qdrant: ListCollectionsAsync()
+    Qdrant-->>EmbeddingStore: Collection list
+    alt Collection does not exist
+        EmbeddingStore->>Qdrant: CreateCollectionAsync(dense + sparse vectors)
+        Note right of Qdrant: Dense: Cosine similarity<br/>Sparse: BM25 with IDF modifier
+        EmbeddingStore->>Qdrant: CreatePayloadIndexAsync(sourceDocument)
+        EmbeddingStore->>Qdrant: CreatePayloadIndexAsync(sectionPath)
+        EmbeddingStore->>Qdrant: CreatePayloadIndexAsync(chunkIndex)
+    end
+```
+
+### Document Indexing Flow
+
+Processes a PDF document by extracting text, splitting it into chunks, generating dense embeddings, computing BM25 sparse vectors for each chunk, and storing all vectors with metadata in Qdrant. The LLM uses function calling to invoke the indexing operation.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as User
+    participant HostedService as AiAssistantHostedService
+    participant SK as Semantic Kernel
+    participant ChatService as IChatCompletionService<br/>(Azure OpenAI / Ollama)
+    participant RagPlugin as RagPlugin
+    participant RagService as RagService
+    participant DocExtractor as IDocumentExtractor
+    participant EmbeddingGen as IEmbeddingGenerator
+    participant EmbeddingStore as QdrantHybridIdfEmbeddingStore
+    participant Tokenizer as TextTokenizer
+    participant Qdrant as Qdrant Vector DB
+
+    User->>HostedService: "index Kubernetes Concepts.pdf"
+    HostedService->>SK: Process User Message
+    SK->>ChatService: Request with Function Calling
+    ChatService-->>SK: Call index_pdf function
+    SK->>RagPlugin: IndexPdfAsync(filename)
+    RagPlugin->>RagService: IndexPdfAsync(filename)
+    RagService->>DocExtractor: ProcessDocumentAsync(pdfPath, strategy)
+    DocExtractor-->>RagService: List<DocumentChunk>
+    RagService->>EmbeddingGen: GenerateEmbeddingsAsync(chunks)
+    EmbeddingGen-->>RagService: float[][] dense embeddings
+    RagService->>EmbeddingStore: StoreChunksAsync(chunks)
+    
+    loop For each chunk
+        EmbeddingStore->>Tokenizer: GetTermFrequencies(text)
+        Tokenizer-->>EmbeddingStore: (termFrequencies, tokenCount)
+        EmbeddingStore->>EmbeddingStore: ComputeTfSparseVector()<br/>BM25 TF normalization
+    end
+    
+    EmbeddingStore->>Qdrant: UpsertAsync(points with dense + sparse vectors)
+    Note right of Qdrant: Each point contains:<br/>- Dense vector (embeddings)<br/>- Sparse vector (BM25 TF)<br/>- Payload (metadata)
+    Qdrant-->>EmbeddingStore: Success
+    EmbeddingStore-->>RagService: Complete
+    RagService-->>RagPlugin: IndexResult
+    RagPlugin-->>SK: "Indexed: X chunks created"
+    SK->>ChatService: Function Result
+    ChatService-->>HostedService: Stream Response
+    HostedService-->>User: Display Result
+```
+
+### Question Answering Flow (Hybrid RAG Search)
+
+Performs hybrid retrieval by combining dense vector semantic search with BM25 sparse vector keyword search, fusing results using Reciprocal Rank Fusion (RRF). Adjacent chunks are retrieved for context continuity, results are reranked using a cross-encoder, and the LLM generates a cited response.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as User
+    participant HostedService as AiAssistantHostedService
+    participant SK as Semantic Kernel
+    participant ChatService as IChatCompletionService<br/>(Azure OpenAI / Ollama)
+    participant RagPlugin as RagPlugin
+    participant RagService as RagService
+    participant EmbeddingGen as IEmbeddingGenerator
+    participant EmbeddingStore as QdrantHybridIdfEmbeddingStore
+    participant Tokenizer as TextTokenizer
+    participant Qdrant as Qdrant Vector DB
+    participant Reranker as IReranker
+
+    User->>HostedService: "What is a Kubernetes Pod?"
+    HostedService->>SK: Process User Message
+    SK->>ChatService: Request with Function Calling
+    ChatService-->>SK: Call search_documents function
+    SK->>RagPlugin: SearchDocumentsAsync(query, topK)
+    RagPlugin->>RagService: SearchAsync(query, topK)
+    RagService->>EmbeddingGen: GenerateEmbeddingAsync(query)
+    EmbeddingGen-->>RagService: float[] queryEmbedding
+    RagService->>EmbeddingStore: SearchWithAdjacentChunksAsync(query, embedding, topK*2)
+    
+    EmbeddingStore->>Tokenizer: GetTermFrequencies(query)
+    Tokenizer-->>EmbeddingStore: Query term frequencies
+    EmbeddingStore->>EmbeddingStore: ComputeTfSparseVector(query)
+    
+    EmbeddingStore->>Qdrant: QueryAsync() with Prefetch
+    Note right of Qdrant: Prefetch 1: Dense vector search<br/>(semantic similarity)<br/>Prefetch 2: Sparse vector search<br/>(BM25 with IDF applied)<br/>Fusion: RRF (Reciprocal Rank Fusion)
+    Qdrant-->>EmbeddingStore: Hybrid search results
+    
+    EmbeddingStore->>EmbeddingStore: ExpandWithAdjacentChunksAsync()
+    loop For adjacent chunks needed
+        EmbeddingStore->>Qdrant: ScrollAsync(filter by doc + chunkIndex)
+        Qdrant-->>EmbeddingStore: Adjacent chunks
+    end
+    
+    EmbeddingStore-->>RagService: List<DocumentChunk> with context
+    RagService->>Reranker: RerankAsync(query, results, topK)
+    Reranker-->>RagService: List<RerankResult> reranked
+    RagService-->>RagPlugin: List<DocumentChunk> topResults
+    RagPlugin->>RagService: GetContextFromResults(results)
+    RagService-->>RagPlugin: Formatted context string
+    RagPlugin-->>SK: Context from documents
+    SK->>ChatService: Function Result + Generate Response
+    ChatService-->>HostedService: Stream Response with Citations
+    HostedService-->>User: Display Answer
+```
+
+### Document Deletion Flow
+
+Removes all indexed chunks for a specified document from the Qdrant vector database by filtering on the source document name. This cleans up the index when documents are no longer needed.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as User
+    participant HostedService as AiAssistantHostedService
+    participant SK as Semantic Kernel
+    participant RagPlugin as RagPlugin
+    participant RagService as RagService
+    participant EmbeddingStore as QdrantHybridIdfEmbeddingStore
+    participant Qdrant as Qdrant Vector DB
+
+    User->>HostedService: "delete Kubernetes Concepts.pdf"
+    HostedService->>SK: Process User Message
+    SK->>RagPlugin: DeleteDocumentAsync(documentName)
+    RagPlugin->>RagService: DeleteDocumentAsync(documentName)
+    RagService->>EmbeddingStore: DeleteDocumentAsync(documentName)
+    EmbeddingStore->>Qdrant: DeleteAsync(filter: sourceDocument = name)
+    Qdrant-->>EmbeddingStore: Deleted
+    EmbeddingStore-->>RagService: Complete
+    RagService-->>User: "Deleted: documentName"
+```
+
 ## Project Structure
 
 ```
