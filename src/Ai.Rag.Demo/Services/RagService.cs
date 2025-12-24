@@ -44,12 +44,15 @@ public class RagService
             throw new FileNotFoundException($"PDF not found: {pdfFilePath}");
         }
 
+        Console.WriteLine($"Indexing {pdfFileName}");
+
         // Process document: extract text and create chunks
         //var extractionStrategy = new PdfBookmarkExtractor(1);
         //var extractionStrategy = new PdfBookmarkExtractor(2, 10);
         var extractionStrategy = new PdfFormatBasedExtractor(2);
         //var extractionStrategy = new PdfSimpleExtractor(10);
         var chunks = await _documentExtractor.ProcessDocumentAsync(pdfFilePath, extractionStrategy, cancellationToken);
+        Console.WriteLine($"Extracted {pdfFileName} into {chunks.Count} chunks");
 
         var embeddings = await _embeddingGenerator.GenerateEmbeddingsAsync(chunks, cancellationToken);
 

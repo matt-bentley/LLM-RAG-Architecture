@@ -43,8 +43,8 @@ public class LlmReranker : IReranker
             
             You must respond with ONLY a JSON array in the following format:
             [
-                { "id": 0, "score": <number between 0 and 10>, "explanation": "<brief explanation>" },
-                { "id": 1, "score": <number between 0 and 10>, "explanation": "<brief explanation>" },
+                { "id": 0, "score": <number between 0 and 10> },
+                { "id": 1, "score": <number between 0 and 10> },
                 ...
             ]
             
@@ -100,8 +100,7 @@ public class LlmReranker : IReranker
             {
                 Chunk = chunk,
                 RelevanceScore = scores[index].Score,
-                OriginalRank = index + 1,
-                Explanation = scores[index].Explanation
+                OriginalRank = index + 1
             }).ToList();
 
             // Filter out non-relevant results, sort by score, and limit to topK
@@ -129,8 +128,7 @@ public class LlmReranker : IReranker
                     Chunk = chunk,
                     RelevanceScore = 5.0 - (index * 0.1),
                     OriginalRank = index + 1,
-                    NewRank = index + 1,
-                    Explanation = "Scoring failed, using default score"
+                    NewRank = index + 1
                 })
                 .ToList();
         }

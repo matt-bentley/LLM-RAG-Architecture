@@ -38,6 +38,7 @@ public class AzureOpenAIEmbeddingGenerator : IEmbeddingGenerator
             var batch = chunks.Skip(i).Select(e => e.GenerateEmbeddingText()).Take(batchSize);
             var response = await embeddingClient.GenerateEmbeddingsAsync(batch, cancellationToken: cancellationToken);
             allEmbeddings.AddRange(response.Value.Select(e => e.ToFloats().ToArray()));
+            Console.WriteLine($"Created embeddings for {allEmbeddings.Count}/{chunks.Count} chunks");
         }
         
         return allEmbeddings;

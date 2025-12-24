@@ -2,6 +2,15 @@ version: '3.8'
 
 services:
   
+  ollama:
+    build:
+      context: ./src/ollama
+      dockerfile: Dockerfile
+    image: mabentley/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+
   reranker:
     build:
       context: ./src/reranker
@@ -30,6 +39,26 @@ services:
     #   - qdrant_storage:/qdrant/storage
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
+
+  ai-rag-demo:
+    build:
+      context: ./src/Ai.Rag.Demo
+      dockerfile: Dockerfile
+    image: mabentley/ai-rag-demo:latest
+    container_name: ai-rag-demo
+    depends_on:
+      - ollama
+      - qdrant
+      - embedding
+      - reranker
+    stdin_open: true
+    tty: true
+    environment:
+      - Llm__Endpoint=http://localhost:11434/v1
+      - Llm__ApiKey=ollama
+      - Llm__ChatDeploymentName=llama3.2:3b
+      - Embedding__Endpoint=http://localhost:8001/
+      - Reranker__Endpoint=http://localhost:8001/
 
 # volumes:
 #   qdrant_storage:

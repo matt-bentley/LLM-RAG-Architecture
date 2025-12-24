@@ -53,6 +53,8 @@ public class HttpEmbeddingGenerator : IEmbeddingGenerator
             response.EnsureSuccessStatusCode();
             var embeddingResponse = await response.Content.ReadFromJsonAsync<EmbeddingResponse>(options: _serializerOptions, cancellationToken: cancellationToken);
             allEmbeddings.AddRange(embeddingResponse.Embeddings);
+
+            Console.WriteLine($"Created embeddings for {allEmbeddings.Count}/{chunks.Count} chunks");
         }
 
         return allEmbeddings;

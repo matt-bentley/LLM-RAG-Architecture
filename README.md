@@ -1,4 +1,4 @@
-# LLM-RAG-Architecture
+﻿# LLM-RAG-Architecture
 
 Production-grade Retrieval Augmented Generation (RAG) architecture demonstrating best practices for building AI-powered document search and Q&A systems.
 
@@ -13,50 +13,52 @@ This repository provides a complete RAG solution featuring:
 - **PDF Processing**: Multiple extraction strategies for optimal document chunking
 - **Interactive Chat**: Console-based assistant with Semantic Kernel function calling
 
+Files to index for RAG must be in the `src/Ai.Rag.Demo/Data` folder. The current setup contains the Kubernetes documentation as an example.
+
 ## Architecture
 
 ```
-???????????????????????????????????????????????????????????????????
-?                        AI RAG Assistant                          ?
-?                     (Semantic Kernel + .NET)                     ?
-???????????????????????????????????????????????????????????????????
-                                ?
-        ?????????????????????????????????????????????????
-        ?                       ?                       ?
-?????????????????      ?????????????????      ?????????????????
-?  LLM Service  ?      ?   Embedding   ?      ?   Reranker    ?
-? (Azure/Ollama)?      ?    Service    ?      ?    Service    ?
-?????????????????      ?????????????????      ?????????????????
-                              ?                       ?
-                              ?                       ?
-                       ???????????????         ???????????????
-                       ?   Qdrant    ?         ?Cross-Encoder?
-                       ?  (Hybrid)   ?         ?   (BAAI)    ?
-                       ???????????????         ???????????????
+┌─────────────────────────────────────────────────────────────────┐
+│                        AI RAG Assistant                          │
+│                     (Semantic Kernel + .NET)                     │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+│  LLM Service  │      │   Embedding   │      │   Reranker    │
+│ (Azure/Ollama)│      │    Service    │      │    Service    │
+└───────────────┘      └───────────────┘      └───────────────┘
+                              │                       │
+                              ▼                       ▼
+                       ┌─────────────┐         ┌─────────────┐
+                       │   Qdrant    │         │Cross-Encoder│
+                       │  (Hybrid)   │         │   (BAAI)    │
+                       └─────────────┘         └─────────────┘
 ```
 
 ## Project Structure
 
 ```
 LLM-RAG-Architecture/
-??? src/
-?   ??? Ai.Rag.Demo/              # Main .NET RAG application
-?   ?   ??? DocumentExtraction/   # PDF processing & chunking
-?   ?   ??? EmbeddingGenerators/  # Embedding providers
-?   ?   ??? EmbeddingStores/      # Vector store implementations
-?   ?   ??? Rerankers/            # Reranking strategies
-?   ?   ??? Services/             # Core RAG orchestration
-?   ?   ??? Plugins/              # Semantic Kernel plugins
-?   ??? embedding/                # Python embedding service
-?   ?   ??? main.py               # FastAPI embedding server
-?   ?   ??? Dockerfile
-?   ??? reranker/                 # Python reranker service
-?       ??? main.py               # FastAPI reranker server
-?       ??? Dockerfile
-??? tests/
-?   ??? Ai.Rag.Demo.Tests/        # Unit tests
-??? docker-compose.yml            # Local development stack
-??? README.md
+├── src/
+│   ├── Ai.Rag.Demo/              # Main .NET RAG application
+│   │   ├── DocumentExtraction/   # PDF processing & chunking
+│   │   ├── EmbeddingGenerators/  # Embedding providers
+│   │   ├── EmbeddingStores/      # Vector store implementations
+│   │   ├── Rerankers/            # Reranking strategies
+│   │   ├── Services/             # Core RAG orchestration
+│   │   └── Plugins/              # Semantic Kernel plugins
+│   ├── embedding/                # Python embedding service
+│   │   ├── main.py               # FastAPI embedding server
+│   │   └── Dockerfile
+│   └── reranker/                 # Python reranker service
+│       ├── main.py               # FastAPI reranker server
+│       └── Dockerfile
+├── tests/
+│   └── Ai.Rag.Demo.Tests/        # Unit tests
+├── docker-compose.yml            # Local development stack
+└── README.md
 ```
 
 ## Quick Start
@@ -69,7 +71,7 @@ LLM-RAG-Architecture/
 
 ### 1. Start Infrastructure Services
 
-Start Qdrant, the embedding service, and reranker using Docker Compose:
+Start all services using Docker Compose:
 
 ```bash
 docker-compose up -d
@@ -81,66 +83,59 @@ This starts:
 | **Qdrant** | 6333 (REST), 6334 (gRPC) | Vector database |
 | **Embedding** | 8001 | BAAI/bge-small-en-v1.5 embedding model |
 | **Reranker** | 8000 | BAAI/bge-reranker-base cross-encoder |
+| **Ollama** | 11434 | Local LLM service |
+| **AI RAG Demo** | - | Interactive RAG application |
 
 ### 2. Configure the Application
 
-Edit `src/Ai.Rag.Demo/appsettings.json`:
+Configuration is provided via environment variables in `docker-compose.yml`. The default configuration uses local services (Ollama + Docker services).
 
-#### Option A: Local Development (Ollama + Docker services)
+#### Option A: Local Development (Default)
 
-```json
-{
-  "Llm": {
-    "Endpoint": "http://localhost:11434/v1",
-    "ApiKey": "ollama",
-    "ChatDeploymentName": "llama3.2:3b",
-    "Type": "OpenAi"
-  },
-  "Embedding": {
-    "Endpoint": "http://localhost:8001/",
-    "Type": "Http",
-    "VectorSize": 384,
-    "StoreType": "QdrantHybridIdf"
-  },
-  "Reranker": {
-    "Endpoint": "http://localhost:8000/",
-    "Type": "CrossEncoder"
-  }
-}
+The default `docker-compose.yml` configuration:
+
+```yaml
+environment:
+  - Llm__Endpoint=http://ollama:11434/v1
+  - Llm__ApiKey=ollama
+  - Llm__ChatDeploymentName=llama3.2:3b
+  - Embedding__Endpoint=http://embedding:8000/
+  - Reranker__Endpoint=http://reranker:8000/
 ```
 
 #### Option B: Azure OpenAI (Full Cloud)
 
-```json
-{
-  "Llm": {
-    "Endpoint": "https://your-resource.openai.azure.com",
-    "ApiKey": "your-api-key",
-    "ChatDeploymentName": "gpt-4.1",
-    "Type": "AzureOpenAi"
-  },
-  "Embedding": {
-    "Endpoint": "https://your-resource.openai.azure.com",
-    "ApiKey": "your-api-key",
-    "DeploymentName": "text-embedding-3-large",
-    "Type": "AzureOpenAi",
-    "VectorSize": 3072,
-    "StoreType": "QdrantHybridIdf"
-  },
-  "Reranker": {
-    "Endpoint": "https://your-resource.openai.azure.com",
-    "ApiKey": "your-api-key",
-    "DeploymentName": "gpt-4.1-nano",
-    "Type": "AzureOpenAiLlm"
-  }
-}
+Update the environment variables in `docker-compose.yml`:
+
+```yaml
+environment:
+  - Llm__Endpoint=https://your-resource.openai.azure.com
+  - Llm__ApiKey=your-api-key
+  - Llm__ChatDeploymentName=gpt-4.1
+  - Llm__Type=AzureOpenAi
+  - Embedding__Endpoint=https://your-resource.openai.azure.com
+  - Embedding__ApiKey=your-api-key
+  - Embedding__DeploymentName=text-embedding-3-large
+  - Embedding__Type=AzureOpenAi
+  - Embedding__VectorSize=3072
+  - Reranker__Endpoint=https://your-resource.openai.azure.com
+  - Reranker__ApiKey=your-api-key
+  - Reranker__DeploymentName=gpt-4.1-nano
+  - Reranker__Type=AzureOpenAiLlm
 ```
 
 ### 3. Run the Application
 
+To interact with the AI RAG Demo container:
+
 ```bash
-cd src/Ai.Rag.Demo
-dotnet run
+docker attach ai-rag-demo
+```
+
+Or start fresh with an interactive session:
+
+```bash
+docker-compose run --rm ai-rag-demo
 ```
 
 ### 4. Use the Assistant
@@ -216,6 +211,10 @@ docker run -p 8001:8000 embedding
 # Build and run reranker service
 docker build -t reranker ./src/reranker
 docker run -p 8000:8000 reranker
+
+# Build and run AI RAG Demo
+docker build -t ai-rag-demo ./src/Ai.Rag.Demo
+docker run -it ai-rag-demo
 ```
 
 ## Configuration Reference

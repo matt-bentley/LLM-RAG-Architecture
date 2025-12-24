@@ -24,9 +24,4 @@ public class RerankedResult
     /// The new position after re-ranking
     /// </summary>
     public int NewRank { get; set; }
-
-    /// <summary>
-    /// Optional explanation about why this result is relevant
-    /// </summary>
-    public string Explanation { get; set; }
 }

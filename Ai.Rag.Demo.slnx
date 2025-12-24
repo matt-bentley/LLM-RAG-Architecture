@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Ai.Rag.Demo/Ai.Rag.Demo.csproj" />
     <Project Path="src/embedding/embedding.shproj" Id="3f5ac9e9-4135-4209-bcac-93ab1c311006" />
+    <Project Path="src/ollama/ollama.shproj" Id="528bdca8-d158-4725-a7ce-245957a1e418" />
     <Project Path="src/reranker/reranker.shproj" Id="60a4aeb0-1de9-494c-ab34-858fea1c788e" />
   </Folder>
   <Folder Name="/tests/">
