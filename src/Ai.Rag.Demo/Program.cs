@@ -10,6 +10,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.Configure<LlmSettings>(builder.Configuration.GetSection("Llm"));
 builder.Services.Configure<EmbeddingSettings>(builder.Configuration.GetSection("Embedding"));
 builder.Services.Configure<RerankerSettings>(builder.Configuration.GetSection("Reranker"));
+builder.Services.Configure<QdrantSettings>(builder.Configuration.GetSection("Qdrant"));
 
 builder.Services.AddRagServices();
 builder.Services.AddSemanticKernel();

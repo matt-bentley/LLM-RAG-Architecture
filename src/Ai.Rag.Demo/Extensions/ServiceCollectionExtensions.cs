@@ -24,14 +24,15 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IEmbeddingStore>(sp =>
         {
-            var config = sp.GetRequiredService<IOptions<EmbeddingSettings>>();
-            return config.Value.StoreType switch
+            var embeddingConfig = sp.GetRequiredService<IOptions<EmbeddingSettings>>();
+            var qdrantConfig = sp.GetRequiredService<IOptions<QdrantSettings>>();
+            return embeddingConfig.Value.StoreType switch
             {
-                EmbeddingStoreType.QdrantHybrid => new QdrantHybridEmbeddingStore(config),
-                EmbeddingStoreType.QdrantHybridIdf => new QdrantHybridIdfEmbeddingStore(config),
-                EmbeddingStoreType.Qdrant => new QdrantEmbeddingStore(config),
+                EmbeddingStoreType.QdrantHybrid => new QdrantHybridEmbeddingStore(embeddingConfig, qdrantConfig),
+                EmbeddingStoreType.QdrantHybridIdf => new QdrantHybridIdfEmbeddingStore(embeddingConfig, qdrantConfig),
+                EmbeddingStoreType.Qdrant => new QdrantEmbeddingStore(embeddingConfig, qdrantConfig),
                 EmbeddingStoreType.FileSystem => new FileSystemEmbeddingStore(),
-                _ => throw new NotSupportedException($"Embedding store type '{config.Value.StoreType}' is not supported.")
+                _ => throw new NotSupportedException($"Embedding store type '{embeddingConfig.Value.StoreType}' is not supported.")
             };
         });
 

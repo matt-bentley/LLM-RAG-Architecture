@@ -59,6 +59,7 @@ services:
       - Llm__ChatDeploymentName=llama3.2:3b
       - Embedding__Endpoint=http://localhost:8001/
       - Reranker__Endpoint=http://localhost:8001/
+      - Qdrant__Host=qdrant
 
 # volumes:
 #   qdrant_storage:

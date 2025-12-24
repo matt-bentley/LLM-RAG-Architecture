@@ -1,5 +1,6 @@
 using Ai.Rag.Demo.Models;
 using Ai.Rag.Demo.Services;
+using Ai.Rag.Demo.Settings;
 using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
@@ -34,14 +35,19 @@ public class QdrantHybridIdfEmbeddingStore : IEmbeddingStore
     private const string DenseVectorName = "dense";
     private const string SparseVectorName = "sparse";
 
-    public QdrantHybridIdfEmbeddingStore(IOptions<EmbeddingSettings> options)
+    public QdrantHybridIdfEmbeddingStore(IOptions<EmbeddingSettings> embeddingOptions, IOptions<QdrantSettings> qdrantOptions)
     {
-        _client = new QdrantClient("localhost", 6334);
-        _collectionName = "documents_hybrid_qdrant_idf";
-        _avgDocLength = options.Value.MaxChunkTokens;
-        _denseVectorSize = options.Value.VectorSize;
-        _denseWeight = options.Value.DenseVectorWeight;
-        _sparseWeight = 1 - options.Value.DenseVectorWeight;
+        var qdrantSettings = qdrantOptions.Value;
+        _client = new QdrantClient(
+            host: qdrantSettings.Host,
+            port: qdrantSettings.Port,
+            https: qdrantSettings.UseTls,
+            apiKey: qdrantSettings.ApiKey);
+        _collectionName = qdrantSettings.CollectionName;
+        _avgDocLength = embeddingOptions.Value.MaxChunkTokens;
+        _denseVectorSize = embeddingOptions.Value.VectorSize;
+        _denseWeight = embeddingOptions.Value.DenseVectorWeight;
+        _sparseWeight = 1 - embeddingOptions.Value.DenseVectorWeight;
         _tokenizer = new TextTokenizer();
 
         InitializeCollectionAsync().GetAwaiter().GetResult();
