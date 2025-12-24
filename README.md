@@ -19,8 +19,8 @@ Files to index for RAG must be in the `src/Ai.Rag.Demo/Data` folder. The current
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        AI RAG Assistant                          │
-│                     (Semantic Kernel + .NET)                     │
+│                        AI RAG Assistant                         │
+│                     (Semantic Kernel + .NET)                    │
 └─────────────────────────────────────────────────────────────────┘
                                 │
         ┌───────────────────────┼───────────────────────┐
