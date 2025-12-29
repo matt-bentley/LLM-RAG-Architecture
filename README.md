@@ -17,24 +17,42 @@ Files to index for RAG must be in the `src/Ai.Rag.Demo/Data` folder. The current
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        AI RAG Assistant                         │
-│                     (Semantic Kernel + .NET)                    │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        ▼                       ▼                       ▼
-┌───────────────┐      ┌───────────────┐      ┌───────────────┐
-│  LLM Service  │      │   Embedding   │      │   Reranker    │
-│ (Azure/Ollama)│      │    Service    │      │    Service    │
-└───────────────┘      └───────────────┘      └───────────────┘
-                              │                       │
-                              ▼                       ▼
-                       ┌─────────────┐         ┌─────────────┐
-                       │   Qdrant    │         │Cross-Encoder│
-                       │  (Hybrid)   │         │   (BAAI)    │
-                       └─────────────┘         └─────────────┘
+The RAG system is hosted in a .NET Console app and orchestrated using Semantic Kernel.
+
+```mermaid
+flowchart TB
+    subgraph DotNetApp["AI RAG Assistant (.NET 10)"]
+        SK["Semantic Kernel"]
+        RagPlugin["RagPlugin"]
+        RagService["RagService"]
+        DocExtractor["Document Extractor<br/>(PdfPig)"]
+        Tokenizer["Text Tokenizer<br/>(ML.Tokenizers)"]
+        EmbeddingStore["QdrantHybridIdfEmbeddingStore"]
+    end
+
+    subgraph PythonServices["Python REST API (FastAPI)"]
+        EmbeddingSvc["Embedding Service<br/>BAAI/bge-small-en-v1.5"]
+    end
+
+    subgraph PythonServices2["Python REST API (FastAPI)"]
+        RerankerSvc["Reranker Service<br/>BAAI/bge-reranker-base"]
+    end
+
+    LLM["LLM<br/>(Azure OpenAI / Ollama)"]
+    Qdrant[("Qdrant<br/>Vector Database")]
+
+    User((User)) <--> SK
+    SK <-->|"Chat Completion<br/>+ Function Calling"| LLM
+    SK --> RagPlugin
+    RagPlugin --> RagService
+    
+    RagService --> DocExtractor
+    RagService -->|"Generate Embeddings"| EmbeddingSvc
+    RagService -->|"Rerank Results"| RerankerSvc
+    RagService --> EmbeddingStore
+    
+    EmbeddingStore --> Tokenizer
+    EmbeddingStore -->|"Hybrid Search (Dense + Sparse Vectors)"| Qdrant
 ```
 
 ## Interaction Flows
