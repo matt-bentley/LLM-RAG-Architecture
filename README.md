@@ -1,6 +1,6 @@
 ﻿# LLM-RAG-Architecture
 
-Production-grade Retrieval Augmented Generation (RAG) architecture demonstrating best practices for building AI-powered document search and Q&A systems.
+Production-grade Retrieval-Augmented Generation (RAG) architecture demonstrating best practices for building AI-powered document search and Q&A systems.
 
 ## Overview
 
