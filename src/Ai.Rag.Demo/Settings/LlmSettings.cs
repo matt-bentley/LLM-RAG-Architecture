@@ -5,6 +5,7 @@ public class LlmSettings
     public string Endpoint { get; set; }
     public string ApiKey { get; set; }
     public string ChatDeploymentName { get; set; }
+    public double Temperature { get; set; }
     public LlmType Type { get; set; }
 }
 

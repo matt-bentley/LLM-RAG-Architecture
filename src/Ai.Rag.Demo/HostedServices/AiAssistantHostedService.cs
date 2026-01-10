@@ -1,5 +1,7 @@
+using Ai.Rag.Demo.Settings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
@@ -13,15 +15,18 @@ public class AiAssistantHostedService : IHostedService
 {
     private readonly ILogger<AiAssistantHostedService> _logger;
     private readonly IHostApplicationLifetime _lifetime;
+    private readonly IOptions<LlmSettings> _options;
     private readonly Kernel _kernel;
 
     public AiAssistantHostedService(
         ILogger<AiAssistantHostedService> logger,
         IHostApplicationLifetime lifetime,
+        IOptions<LlmSettings> options,
         Kernel kernel)
     {
         _logger = logger;
         _lifetime = lifetime;
+        _options = options;
         _kernel = kernel;
     }
 
@@ -98,7 +103,8 @@ If no results are found, tell the user no relevant documents were found.
                     // Get AI response with automatic function calling
                     var executionSettings = new AzureOpenAIPromptExecutionSettings
                     {
-                        FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+                        FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+                        Temperature = _options.Value.Temperature,
                     };
 
                     Console.ForegroundColor = ConsoleColor.Green;
