@@ -5,7 +5,6 @@ public class LlmSettings
     public string Endpoint { get; set; }
     public string ApiKey { get; set; }
     public string ChatDeploymentName { get; set; }
-    public string RerankerDeploymentName { get; set; }
     public LlmType Type { get; set; }
 }
 
