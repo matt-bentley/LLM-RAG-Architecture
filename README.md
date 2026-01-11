@@ -2,6 +2,8 @@
 
 Production-grade Retrieval-Augmented Generation (RAG) architecture demonstrating best practices for building AI-powered document search and Q&A systems.
 
+![architecture](./images/architecture.png)
+
 ## Overview
 
 This repository provides a complete RAG solution featuring:
