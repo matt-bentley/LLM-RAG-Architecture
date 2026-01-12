@@ -17,6 +17,8 @@ This repository provides a complete RAG solution featuring:
 
 Files to index for RAG must be in the `src/Ai.Rag.Demo/Data` folder. The current setup contains the Kubernetes documentation as an example.
 
+![assistant](./images/assistant.png)
+
 ## Architecture
 
 The RAG system is hosted in a .NET Console app and orchestrated using Semantic Kernel.
